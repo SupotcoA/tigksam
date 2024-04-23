@@ -81,7 +81,8 @@ def train_step(model,
     perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
     if epoch % 1 == 0:
         with torch.no_grad():
-            vis_img(batch_data, rec_out['recx'], f"train {epoch}")
+            vis_img(batch_data, rec_out['recx'], f"train {epoch}",
+                    config['image_size'],config['ver'],config['outcome_root'])
     if epoch % config['save_every_n_epoch'] == 0:
         save_phase1(config['phase'],
                     epoch,
@@ -153,7 +154,8 @@ def val_step(model,
     avg_probs = acc_encodings_sum / torch.sum(acc_encodings_sum)
     perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
     if epoch % 1 == 0:
-        vis_img(batch_data, rec_out['recx'], f"test {epoch}")
+        vis_img(batch_data, rec_out['recx'], f"test {epoch}",
+                    config['image_size'],config['ver'],config['outcome_root'])
     info = f'Test Epoch: {epoch}.\n' + \
            f'rec_loss: {acc_rec_loss / n_batch:.4f}; ' + \
            f'codebook_loss: {acc_cb_loss / n_batch:.4f}; ' + \
@@ -206,7 +208,8 @@ def train_step_vae(model,
     perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
     if epoch % 1 == 0:
         with torch.no_grad():
-            vis_img(batch_data, rec_out['recx'], f"train {epoch}")
+            vis_img(batch_data, rec_out['recx'], f"train {epoch}",
+                    config['image_size'],config['ver'],config['outcome_root'])
     if epoch % config['save_every_n_epoch'] == 0:
         save_phase1(config['phase'],
                     epoch,
@@ -260,7 +263,8 @@ def val_step_vae(model,
     avg_probs = acc_encodings_sum / torch.sum(acc_encodings_sum)
     perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
     if epoch % 1 == 0:
-        vis_img(batch_data, rec_out['recx'], f"test {epoch}")
+        vis_img(batch_data, rec_out['recx'], f"test {epoch}",
+                    config['image_size'],config['ver'],config['outcome_root'])
     info = f'Test Epoch: {epoch}.\n' + \
            f'rec_loss: {acc_rec_loss / n_batch:.4f}; ' + \
            f'codebook_loss: {acc_cb_loss / n_batch:.4f}; ' + \
@@ -378,7 +382,8 @@ def vis_maskgit_unconditional_generate(maskgit,
     else:
         ind = torch.vstack(ind_ls)
     imgs = model.decode(ind)
-    vis_img(imgs[:8], imgs[8:], f"{name}_")
+    vis_img(imgs[:8], imgs[8:], f"{name}_",
+                    config['image_size'],config['ver'],config['outcome_root'])
 
     temperature = t if t is not None else (2.5, 1)
     ind_ls = []
@@ -390,7 +395,8 @@ def vis_maskgit_unconditional_generate(maskgit,
     else:
         ind = torch.vstack(ind_ls)
     imgs = model.decode(ind)
-    vis_img(imgs[:8], imgs[8:], f"{name}__")
+    vis_img(imgs[:8], imgs[8:], f"{name}__",
+                    config['image_size'],config['ver'],config['outcome_root'])
 
 
 if __name__ == '__main__':

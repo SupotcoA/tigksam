@@ -78,8 +78,7 @@ def save_phase2(maskgit,
 def vis_img(x, y, name,
             image_size,
             ver,
-            outcome_root,
-            **kwargs):
+            outcome_root):
     h, w = image_size
     fp = os.path.join(outcome_root, f"{ver}/{name}.png")
     x = (cf2cl(x.detach().cpu()).numpy()[:8] + 1) / 2
