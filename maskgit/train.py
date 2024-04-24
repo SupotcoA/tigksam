@@ -34,7 +34,6 @@ def train_step(model,
     acc_d_loss = 0
     acc_d_acc_r = 0
     acc_d_acc_f = 0
-    disc_skip = 0
     for batch_ind, batch_data in enumerate(train_dataloader):
         n_batch += 1
         if config['cuda']:
@@ -46,11 +45,8 @@ def train_step(model,
                                       real_x=batch_data, on_train=True)
         d_loss = model.calculate_d_loss(disc_out['disc_out_fake'],
                                         disc_out['disc_out_real'])
-        if d_loss['disc_accuracy_real'] + d_loss['disc_accuracy_fake'] < 1.8:
-            d_loss['tot_loss'].backward()
-            d_optim.step()
-        else:
-            disc_skip += 1
+        d_loss['tot_loss'].backward()
+        d_optim.step()
 
         g_optim.zero_grad()
         disc_out = model.discriminate(fake_x=rec_out['recx'], on_train=True)
@@ -103,8 +99,7 @@ def train_step(model,
            f'gan_accuray: {acc_gan_acc / n_batch:.4f}; ' + \
            f'perplexity: {perplexity:.4f}; ' + \
            f'disc_loss: {acc_d_loss / n_batch:.4f}; ' + \
-           f'disc_accuracy: {acc_d_acc_r / n_batch:.4f}/{acc_d_acc_f / n_batch:.4f}; ' + \
-           f'disc_skip: {disc_skip}\n'
+           f'disc_accuracy: {acc_d_acc_r / n_batch:.4f}/{acc_d_acc_f / n_batch:.4f};\n'
     with open(config['config_path'], 'a') as f:
         f.write(info)
 
