@@ -140,8 +140,12 @@ class VQGAN(nn.Module):
         if self.use_disc:
             gan_loss = F.relu_(1.0 - disc_out_fake).mean()  # self.calculate_bce(disc_out_fake, target=1)
             gan_acc = 1 - torch.mean(disc_out_fake)
-            ada_gan_loss_weight = self.calculate_adaptive_weight(rec_loss+lpips_loss,
-                                                                 gan_loss)
+            if rec_loss.requires_grad:
+                ada_gan_loss_weight = self.calculate_adaptive_weight(rec_loss+lpips_loss,
+                                                                     gan_loss)
+            else:
+                ada_gan_loss_weight = 0
+
         else:
             gan_loss = 0
             gan_acc = 0
