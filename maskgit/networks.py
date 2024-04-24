@@ -92,11 +92,11 @@ class VQGAN(nn.Module):
     @torch.no_grad()
     def calculate_adaptive_weight(self, nll_loss, g_loss):
         last_layer = self.decoder.conv_out.weight
-        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=False)[0]
-        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=False)[0]
+        nll_grads = torch.autograd.grad(nll_loss, last_layer, retain_graph=True)[0]
+        g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
 
         d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
-        d_weight = torch.clamp(d_weight, 0.0, 1e4).detach()
+        d_weight = torch.clamp(d_weight, 0.0, 1e4)
         # d_weight = d_weight * self.discriminator_weight
         return d_weight
 
@@ -127,7 +127,8 @@ class VQGAN(nn.Module):
                 'disc_out_real': disc_out_real}
 
     @staticmethod
-    def calculate_bce(proba, target=1):
+    def calculate_bce(self, proba, target=1):
+        proba = F.sigmoid(proba)
         if target == 1:
             return -torch.mean(torch.log(proba + 1e-2))
         elif target == 0:
@@ -137,15 +138,19 @@ class VQGAN(nn.Module):
         rec_loss = torch.mean(torch.abs(recx - x))  # + torch.abs(recx - x) * 0.05
         lpips_loss = self.lpips_fn.forward(recx, x).mean()
         if self.use_disc:
-            gan_loss = self.calculate_bce(disc_out_fake, target=1)
+            gan_loss = F.relu_(1.0 - disc_out_fake).mean()  # self.calculate_bce(disc_out_fake, target=1)
             gan_acc = 1 - torch.mean(disc_out_fake)
+            ada_gan_loss_weight = self.calculate_adaptive_weight(rec_loss+lpips_loss,
+                                                                 gan_loss)
         else:
             gan_loss = 0
             gan_acc = 0
+            ada_gan_loss_weight = 0
+
         tot_loss = rec_loss * self.rec_loss_weight + \
                    codebook_loss + \
                    lpips_loss * self.lpips_loss_weight + \
-                   gan_loss * self.gan_loss_weight
+                   gan_loss * ada_gan_loss_weight * self.gan_loss_weight
         return {'rec_loss': rec_loss,
                 'codebook_loss': codebook_loss,
                 'lpips_loss': lpips_loss,
@@ -155,8 +160,10 @@ class VQGAN(nn.Module):
                 }
 
     def calculate_d_loss(self, disc_out_fake, disc_out_real):
-        disc_loss = self.calculate_bce(disc_out_fake, target=0) + \
-                    self.calculate_bce(disc_out_real, target=1)
+        #disc_loss = self.calculate_bce(disc_out_fake, target=0) + \
+        #            self.calculate_bce(disc_out_real, target=1)
+        disc_loss = torch.mean(F.relu_(1. - disc_out_real)) + \
+                    torch.mean(F.relu_(1. + disc_out_fake))
         tot_loss = disc_loss * self.disc_loss_weight
         disc_acc_r = torch.mean(disc_out_real)
         disc_acc_f = 1 - torch.mean(disc_out_fake)

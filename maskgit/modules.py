@@ -313,7 +313,7 @@ class Discriminator(nn.Module):
                                     stride=2,
                                     padding=1,
                                     bias=True))
-            layers.append(blk_out)  # need norm
+            # layers.append(blk_out)  # need norm
             layers.append(nn.LeakyReLU(0.2, True))
             current_channels = blk_out
 
@@ -323,7 +323,7 @@ class Discriminator(nn.Module):
                                 stride=1,
                                 padding=1,
                                 bias=True))
-        layers.append(current_channels)
+        # layers.append(current_channels)
         layers.append(nn.LeakyReLU(0.2, True))
 
         self.layers = layers
@@ -340,4 +340,4 @@ class Discriminator(nn.Module):
         for layer in self.layers:
             h = layer(h)
         h = self.conv_out(h)
-        return F.sigmoid(h)
+        return h
