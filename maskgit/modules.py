@@ -71,6 +71,8 @@ class ResBlock(nn.Module):
                                             self.in_channels) \
                                         // res_bottle_neck_factor
             self.bottle_neck_channels = max(32, self.bottle_neck_channels)
+        if self.bottle_neck_channels >= 128 and divmod(self.bottle_neck_channels,32)[1]!=0:
+            self.bottle_neck_channels = (1+int(self.bottle_neck_channels/32))*32
 
         self.norm1 = nn.GroupNorm(num_groups=min(32, in_channels//4),
                                   num_channels=in_channels,
