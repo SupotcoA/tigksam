@@ -325,7 +325,7 @@ class Discriminator(nn.Module):
                                     padding=1,
                                     bias=False))
             layers.append(nn.GroupNorm(num_groups=min(32, blk_out//4),
-                                       num_channels=current_channels,
+                                       num_channels=blk_out,
                                        eps=1e-6, affine=True))  # need norm
             layers.append(nn.LeakyReLU(0.2, True))
             current_channels = blk_out
