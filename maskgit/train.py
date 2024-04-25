@@ -96,7 +96,7 @@ def train_step(model,
            f'codebook_loss: {acc_cb_loss / n_batch:.4f}; ' + \
            f'lpips_loss: {acc_lpips_loss / n_batch:.4f}; ' + \
            f'gan_loss: {acc_gan_loss / n_batch:.4f}; ' + \
-           f'gan_accuray: {acc_gan_acc / n_batch:.4f}; ' + \
+           f'gan_fool_accuray: {acc_gan_acc / n_batch:.4f}; ' + \
            f'perplexity: {perplexity:.4f}; ' + \
            f'disc_loss: {acc_d_loss / n_batch:.4f}; ' + \
            f'disc_accuracy: {acc_d_acc_r / n_batch:.4f}/{acc_d_acc_f / n_batch:.4f};\n'
@@ -156,7 +156,7 @@ def val_step(model,
            f'codebook_loss: {acc_cb_loss / n_batch:.4f}; ' + \
            f'lpips_loss: {acc_lpips_loss / n_batch:.4f}; ' + \
            f'gan_loss: {acc_gan_loss / n_batch:.4f}; ' + \
-           f'gan_accuray: {acc_gan_acc / n_batch:.4f}; ' + \
+           f'gan_fool_accuray: {acc_gan_acc / n_batch:.4f}; ' + \
            f'perplexity: {perplexity:.4f}; ' + \
            f'disc_loss: {acc_d_loss / n_batch:.4f}; ' + \
            f'disc_accuracy: {acc_d_acc_r / n_batch:.4f}/{acc_d_acc_f / n_batch:.4f}\n'

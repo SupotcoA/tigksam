@@ -19,6 +19,7 @@ class VQGAN(nn.Module):
                  embed_dim=256,
                  n_embed=512,
                  channels_mult=(1, 1, 2, 2, 4),
+                 num_res_block=1,
                  rec_loss_weight=1,
                  gan_loss_weight=1,
                  lpips_loss_weight=1,
@@ -33,13 +34,15 @@ class VQGAN(nn.Module):
         self.encoder = Encoder(in_channels=channels,
                                conv_in_channels=conv_in_channels,
                                out_channels=embed_dim,
-                               channels_mult=channels_mult)
+                               channels_mult=channels_mult,
+                               num_res_block=num_res_block)
         self.code_book = CodeBook(embed_dim=embed_dim,
                                   n_embed=n_embed)
         self.decoder = Decoder(in_channels=embed_dim,
                                conv_in_channels=conv_in_channels,
                                out_channels=channels,
-                               channels_mult=channels_mult)
+                               channels_mult=channels_mult,
+                               num_res_block=num_res_block)
         if use_disc and phase == 1:
             self.discriminator = Discriminator(in_channels=channels,
                                                conv_in_channels=d_config['conv_in_channels'],
@@ -139,7 +142,7 @@ class VQGAN(nn.Module):
         lpips_loss = self.lpips_fn.forward(recx, x).mean()
         if self.use_disc:
             gan_loss = -disc_out_fake.mean()  # self.calculate_bce(disc_out_fake, target=1)
-            gan_acc = 1 + gan_loss
+            gan_acc = F.sigmoid(disc_out_fake).mean()
             if rec_loss.requires_grad:
                 ada_gan_loss_weight = self.calculate_adaptive_weight(rec_loss+lpips_loss,
                                                                      gan_loss)
@@ -169,8 +172,8 @@ class VQGAN(nn.Module):
         disc_loss = (torch.mean(F.relu_(1. - disc_out_real)) + \
                      torch.mean(F.relu_(1. + disc_out_fake)))*0.5
         tot_loss = disc_loss * self.disc_loss_weight
-        disc_acc_r = torch.mean(disc_out_real)
-        disc_acc_f = 1 - torch.mean(disc_out_fake)
+        disc_acc_r = torch.mean(F.sigmoid(disc_out_real))
+        disc_acc_f = 1 - torch.mean(F.sigmoid(disc_out_fake))
         return {'disc_loss': disc_loss,
                 'tot_loss': tot_loss,
                 'disc_accuracy_real': disc_acc_r,

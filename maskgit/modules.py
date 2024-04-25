@@ -72,20 +72,24 @@ class ResBlock(nn.Module):
                                         // res_bottle_neck_factor
             self.bottle_neck_channels = max(32, self.bottle_neck_channels)
 
-        self.norm1 = nn.GroupNorm(num_groups=32, num_channels=in_channels,
-                                  eps=1e-6, affine=False)
+        self.norm1 = nn.GroupNorm(num_groups=min(32, in_channels//4),
+                                  num_channels=in_channels,
+                                  eps=1e-6, affine=True)
         self.conv1 = nn.Conv2d(in_channels=in_channels,
                                out_channels=self.bottle_neck_channels,
                                kernel_size=3,
                                stride=1,
-                               padding='same')
-        self.norm2 = nn.GroupNorm(num_groups=32, num_channels=self.bottle_neck_channels,
-                                  eps=1e-6, affine=False)
+                               padding='same',
+                               bias=False)
+        self.norm2 = nn.GroupNorm(num_groups=min(32, self.bottle_neck_channels//4),
+                                  num_channels=self.bottle_neck_channels,
+                                  eps=1e-6, affine=True)
         self.conv2 = nn.Conv2d(in_channels=self.bottle_neck_channels,
                                out_channels=self.out_channels,
                                kernel_size=3,
                                stride=1,
-                               padding='same')
+                               padding='same',
+                               bias=False)
         if self.in_channels != self.out_channels:
             self.conv_shortcut = nn.Conv2d(in_channels=in_channels,
                                            out_channels=self.out_channels,
@@ -173,7 +177,8 @@ class Encoder(nn.Module):
     def __init__(self, in_channels=3,
                  conv_in_channels=64,
                  out_channels=256,
-                 channels_mult=(1, 2, 2, 3, 4)):
+                 channels_mult=(1, 1, 2, 2, 4),
+                 num_res_block=1):
         super().__init__()
 
         self.conv_in = nn.Conv2d(in_channels=in_channels,
@@ -188,8 +193,9 @@ class Encoder(nn.Module):
             blk_in = current_channels
             blk_out = conv_in_channels * m
             if i != len(channels_mult) - 1:
-                layers.append(ResBlock(in_channels=blk_in,
-                                       out_channels=blk_in))  ###
+                for _ in range(num_res_block):
+                    layers.append(ResBlock(in_channels=blk_in,
+                                           out_channels=blk_in))
                 layers.append(DownSample(in_channels=blk_in,
                                          out_channels=blk_out))
 
@@ -232,8 +238,9 @@ class Decoder(nn.Module):
 
     def __init__(self, in_channels=256,
                  conv_in_channels=64,
-                 channels_mult=(1, 2, 2, 3, 4),
-                 out_channels=3):
+                 channels_mult=(1, 1, 2, 2, 4),
+                 out_channels=3,
+                 num_res_block=1):
         super().__init__()
         self.conv_in = nn.Conv2d(in_channels=in_channels,
                                  out_channels=conv_in_channels * channels_mult[-1],
@@ -255,6 +262,9 @@ class Decoder(nn.Module):
             blk_in = current_channels
             blk_out = conv_in_channels * m
             if i != 0:
+                for _ in range(num_res_block-1):
+                    layers.append(ResBlock(in_channels=blk_in,
+                                           out_channels=blk_in))
                 layers.append(ResBlock(in_channels=blk_in,
                                        out_channels=blk_out))  ###
                 layers.append(UpSample(in_channels=blk_out,
@@ -266,7 +276,8 @@ class Decoder(nn.Module):
             current_channels = blk_out
         self.layers = layers
 
-        self.norm_out = nn.GroupNorm(num_groups=32, num_channels=current_channels,
+        self.norm_out = nn.GroupNorm(num_groups=min(32, current_channels//4),
+                                     num_channels=current_channels,
                                      eps=1e-6, affine=False)
         self.conv_out = nn.Conv2d(in_channels=current_channels,
                                   out_channels=out_channels,
@@ -290,7 +301,7 @@ class Decoder(nn.Module):
 class Discriminator(nn.Module):
 
     def __init__(self, in_channels=3,
-                 conv_in_channels=48,
+                 conv_in_channels=64,
                  out_channels=1,
                  channels_mult=(1, 2, 4)):
         super().__init__()
@@ -312,8 +323,10 @@ class Discriminator(nn.Module):
                                     kernel_size=4,
                                     stride=2,
                                     padding=1,
-                                    bias=True))
-            # layers.append(blk_out)  # need norm
+                                    bias=False))
+            layers.append(nn.GroupNorm(num_groups=min(32, blk_out//4),
+                                       num_channels=current_channels,
+                                       eps=1e-6, affine=True))  # need norm
             layers.append(nn.LeakyReLU(0.2, True))
             current_channels = blk_out
 
@@ -323,7 +336,9 @@ class Discriminator(nn.Module):
                                 stride=1,
                                 padding=1,
                                 bias=True))
-        # layers.append(current_channels)
+        layers.append(nn.GroupNorm(num_groups=min(32, current_channels//4),
+                                   num_channels=current_channels,
+                                   eps=1e-6, affine=True))
         layers.append(nn.LeakyReLU(0.2, True))
 
         self.layers = layers
