@@ -206,7 +206,8 @@ def train_step_vae(model,
             vis_img(batch_data, rec_out['recx'], f"train {epoch}",
                     config['image_size'],config['ver'],config['outcome_root'])
     if epoch % config['save_every_n_epoch'] == 0:
-        save_phase1(config['phase'],
+        save_phase1(model,
+                    config['phase'],
                     epoch,
                     config['ver'],
                     config['outcome_root'],
