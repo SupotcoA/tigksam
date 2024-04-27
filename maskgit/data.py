@@ -77,7 +77,7 @@ def build_dataset(phase,
         train_dataloader = DataLoader(train_data, batch_size=config['batch_size'],
                                       shuffle=True, num_workers=4, drop_last=True)
 
-        test_dataloader = DataLoader(test_data, batch_size=config['batch_size']/config['batch_acc'],
+        test_dataloader = DataLoader(test_data, batch_size=config['batch_size'],
                                      shuffle=True, num_workers=4, drop_last=True)
 
     elif phase == 2:
@@ -95,7 +95,7 @@ def build_dataset(phase,
 
         test_data_tensor = torch.from_numpy(test_data)
         test_dataset = torch.utils.data.TensorDataset(test_data_tensor)
-        test_dataloader = DataLoader(test_dataset, batch_size=config['batch_size']/config['batch_acc'],
+        test_dataloader = DataLoader(test_dataset, batch_size=config['batch_size'],
                                      shuffle=True, drop_last=True)
 
     return train_dataloader, test_dataloader
