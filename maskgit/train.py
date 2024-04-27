@@ -24,6 +24,7 @@ def train_step(model,
                g_optim,
                config):
     model.train()
+    model.update_gan_loss_weight(epoch)
     n_batch = 0
     acc_rec_loss = 0
     acc_cb_loss = 0
@@ -181,6 +182,7 @@ def train_step_vae(model,
     acc_encodings_sum = 0
     for batch_ind, batch_data in enumerate(train_dataloader):
         n_batch += 1
+
         if config['cuda']:
             batch_data = batch_data.cuda()
 

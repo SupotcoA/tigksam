@@ -27,6 +27,7 @@ class VQGAN(nn.Module):
                  use_disc=False,
                  cuda=False,
                  phase=1,
+                 g_config=None,
                  d_config=None):
 
         super().__init__()
@@ -61,16 +62,11 @@ class VQGAN(nn.Module):
         else:
             self.lpips_loss_weight = None
 
+        self.gan_loss_weight_update_fn = g_config['gan_loss_weight_update_fn']
+
     @torch.no_grad()
-    def update_gan_loss_weight(self, epoch, d_loss_val):
-        return
-        # if epoch<=3:
-        #   self.gan_loss_weight = 0.15
-        # elif 5<epoch<9:
-        #    self.gan_loss_weight = 0.06*(epoch-4)
-        # else:
-        #   self.gan_loss_weight = 0.3
-        # self.gan_loss_weight = self.gan_loss_weight * max(0.2,-d_loss_val)
+    def update_gan_loss_weight(self, epoch):
+        self.gan_loss_weight = self.gan_loss_weight_update_fn(epoch)
 
     @torch.no_grad()
     def update_disc_loss_weight(self, epoch, d_loss_val):
