@@ -21,6 +21,7 @@ def build_models(config,
                   use_disc=config['use_disc'],
                   cuda=config['cuda'],
                   phase=phase,
+                  g_config=g_config,
                   d_config=d_config
                   )
     device = 'cuda' if config['cuda'] else 'cpu'
