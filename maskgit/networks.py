@@ -95,7 +95,7 @@ class VQGAN(nn.Module):
         g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
 
         d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
-        d_weight = torch.clamp(d_weight, 0.0, 1e4)
+        d_weight = torch.clamp(d_weight, 0.0, 1e2)
         # d_weight = d_weight * self.discriminator_weight
         return d_weight
 
@@ -140,7 +140,7 @@ class VQGAN(nn.Module):
         else:
             lpips_loss = 0
         if self.use_disc:
-            gan_loss = -disc_out_fake.mean()  # self.calculate_bce(disc_out_fake, target=1)
+            gan_loss = F.relu_(0.9-disc_out_fake).mean()  # self.calculate_bce(disc_out_fake, target=1)
             gan_acc = F.sigmoid(disc_out_fake).mean()
             if rec_loss.requires_grad:
                 ada_gan_loss_weight = self.calculate_adaptive_weight(rec_loss+lpips_loss,
