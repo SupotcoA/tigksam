@@ -40,24 +40,27 @@ def train_step(model,
         if config['cuda']:
             batch_data = batch_data.cuda()
 
-        d_optim.zero_grad()
         rec_out = model.reconstruct(batch_data)
         disc_out = model.discriminate(fake_x=rec_out['recx'].detach(),
                                       real_x=batch_data, on_train=True)
         d_loss = model.calculate_d_loss(disc_out['disc_out_fake'],
                                         disc_out['disc_out_real'])
-        d_loss['tot_loss'].backward()
-        d_optim.step()
 
-        g_optim.zero_grad()
+        (d_loss['tot_loss']/config['batch_acc']).backward()
+        if n_batch%config['batch_acc']:
+            d_optim.step()
+            d_optim.zero_grad()
+
         disc_out = model.discriminate(fake_x=rec_out['recx'], on_train=True)
         g_loss = model.calculate_g_loss(x=batch_data,
                                         recx=rec_out['recx'],
                                         codebook_loss=rec_out['codebook_loss'],
                                         disc_out_fake=disc_out['disc_out_fake'])
 
-        g_loss['tot_loss'].backward()
-        g_optim.step()
+        (g_loss['tot_loss']/config['batch_acc']).backward()
+        if n_batch % config['batch_acc']:
+            g_optim.step()
+            g_optim.zero_grad()
 
         # d_loss_logger.update(d_loss['disc_loss'].detach().cpu().item())
 
@@ -105,6 +108,8 @@ def train_step(model,
         f.write(info)
 
     print(info)
+    d_optim.zero_grad()
+    g_optim.zero_grad()
 
 
 @torch.no_grad()
