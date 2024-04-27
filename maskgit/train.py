@@ -47,9 +47,10 @@ def train_step(model,
                                         disc_out['disc_out_real'])
 
         (d_loss['tot_loss']/config['batch_acc']).backward()
-        if n_batch%config['batch_acc']:
+        if n_batch % config['batch_acc']==0:
             d_optim.step()
             d_optim.zero_grad()
+
 
         disc_out = model.discriminate(fake_x=rec_out['recx'], on_train=True)
         g_loss = model.calculate_g_loss(x=batch_data,
@@ -58,7 +59,7 @@ def train_step(model,
                                         disc_out_fake=disc_out['disc_out_fake'])
 
         (g_loss['tot_loss']/config['batch_acc']).backward()
-        if n_batch % config['batch_acc']:
+        if n_batch % config['batch_acc']==0:
             g_optim.step()
             g_optim.zero_grad()
 
@@ -84,7 +85,8 @@ def train_step(model,
             vis_img(batch_data, rec_out['recx'], f"train {epoch}",
                     config['image_size'],config['ver'],config['outcome_root'])
     if epoch % config['save_every_n_epoch'] == 0:
-        save_phase1(config['phase'],
+        save_phase1(model,
+                    config['phase'],
                     epoch,
                     config['ver'],
                     config['outcome_root'],

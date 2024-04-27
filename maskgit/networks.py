@@ -60,7 +60,7 @@ class VQGAN(nn.Module):
             if cuda:
                 self.lpips_fn.cuda()
         else:
-            self.lpips_loss_weight = None
+            self.lpips_loss_weight = -1
 
         self.gan_loss_weight_update_fn = g_config['gan_loss_weight_update_fn']
 
@@ -135,7 +135,10 @@ class VQGAN(nn.Module):
 
     def calculate_g_loss(self, x, recx, codebook_loss, disc_out_fake=None):
         rec_loss = torch.mean(torch.abs(recx - x))  # + torch.abs(recx - x) * 0.05
-        lpips_loss = self.lpips_fn.forward(recx, x).mean()
+        if self.lpips_loss_weight>0:
+            lpips_loss = self.lpips_fn.forward(recx, x).mean()
+        else:
+            lpips_loss = 0
         if self.use_disc:
             gan_loss = -disc_out_fake.mean()  # self.calculate_bce(disc_out_fake, target=1)
             gan_acc = F.sigmoid(disc_out_fake).mean()
@@ -159,7 +162,8 @@ class VQGAN(nn.Module):
                 'lpips_loss': lpips_loss,
                 'gan_loss': gan_loss,
                 'gan_accuracy': gan_acc,
-                'tot_loss': tot_loss
+                'tot_loss': tot_loss,
+                'ada_gan_loss_weight':ada_gan_loss_weight
                 }
 
     def calculate_d_loss(self, disc_out_fake, disc_out_real):
