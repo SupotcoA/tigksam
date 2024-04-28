@@ -1,17 +1,17 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-import torch.nn.init as init
 
 # from networks import *
 from utils import *
 
 
 class EMALogger:
-    def __init__(self, decay=0.9):
+    def __init__(self, decay=0.9, val_init=0.75):
         self.decay = decay
-        self.val = 0
+        self.val = val_init
 
+    @torch.no_grad()
     def update(self, val):
         self.val = self.decay * self.val + val * (1 - self.decay)
 
@@ -24,7 +24,7 @@ def train_step(model,
                g_optim,
                config):
     model.train()
-
+    ema_log = EMALogger(decay=0.75)
     acc_g_loss = 0
     acc_d_loss = 0
     n_batch = 0
@@ -80,16 +80,20 @@ def train_step(model,
         acc_lpips_loss += g_loss['lpips_loss'].detach()
         acc_gan_loss += g_loss['gan_loss'].detach()
         acc_gan_acc += g_loss['gan_accuracy'].detach()
-        acc_ada_gan_loss_weight *= (g_loss['ada_gan_loss_weight']+1e-2)
+        acc_ada_gan_loss_weight += g_loss['ada_gan_loss_weight']
         acc_encodings_sum += rec_out['encodings_sum'].detach().cpu()
         acc_d_loss += d_loss['disc_loss'].detach()
         acc_d_acc_r += d_loss['disc_accuracy_real'].detach()
         acc_d_acc_f += d_loss['disc_accuracy_fake'].detach()
 
+        ema_log.update((d_loss['disc_accuracy_real'].detach() +
+                        d_loss['disc_accuracy_fake'].detach())/2)
+        model.update_gan_loss_weight(epoch=epoch,
+                                     disc_acc=ema_log.val)
+
     avg_probs = acc_encodings_sum / torch.sum(acc_encodings_sum)
     perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
-    model.update_gan_loss_weight(epoch=epoch,
-                                 disc_acc=((acc_d_acc_r+acc_d_acc_f)/(2*n_batch)).cpu().item())
+
     if epoch % 1 == 0:
         with torch.no_grad():
             vis_img(batch_data, rec_out['recx'], f"train {epoch}",
@@ -113,7 +117,7 @@ def train_step(model,
            f'lpips_loss: {acc_lpips_loss / n_batch:.4f}; ' + \
            f'gan_loss: {acc_gan_loss / n_batch:.4f}; ' + \
            f'gan_fool_accuray: {acc_gan_acc / n_batch:.4f}; ' + \
-           f'ada_gan_loss_weight:{acc_ada_gan_loss_weight**(1/n_batch):.4f}; ' + \
+           f'ada_gan_loss_weight:{acc_ada_gan_loss_weight/n_batch:.4f}; ' + \
            f'perplexity: {perplexity:.4f}; ' + \
            f'disc_loss: {acc_d_loss / n_batch:.4f}; ' + \
            f'disc_accuracy: {acc_d_acc_r / n_batch:.4f}/{acc_d_acc_f / n_batch:.4f};\n'
