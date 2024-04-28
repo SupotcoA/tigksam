@@ -33,7 +33,7 @@ def train_step(model,
     acc_lpips_loss = 0
     acc_gan_loss = 0
     acc_gan_acc = 0
-    acc_ada_gan_loss_weight=0
+    acc_ada_gan_loss_weight=1
     acc_encodings_sum = 0
     acc_d_loss = 0
     acc_d_acc_r = 0
@@ -80,7 +80,7 @@ def train_step(model,
         acc_lpips_loss += g_loss['lpips_loss'].detach()
         acc_gan_loss += g_loss['gan_loss'].detach()
         acc_gan_acc += g_loss['gan_accuracy'].detach()
-        acc_ada_gan_loss_weight += g_loss['ada_gan_loss_weight']
+        acc_ada_gan_loss_weight *= (g_loss['ada_gan_loss_weight']+1e-2)
         acc_encodings_sum += rec_out['encodings_sum'].detach().cpu()
         acc_d_loss += d_loss['disc_loss'].detach()
         acc_d_acc_r += d_loss['disc_accuracy_real'].detach()
@@ -111,7 +111,7 @@ def train_step(model,
            f'lpips_loss: {acc_lpips_loss / n_batch:.4f}; ' + \
            f'gan_loss: {acc_gan_loss / n_batch:.4f}; ' + \
            f'gan_fool_accuray: {acc_gan_acc / n_batch:.4f}; ' + \
-           f'ada_gan_loss_weight:{acc_ada_gan_loss_weight/n_batch:.4f}; ' + \
+           f'ada_gan_loss_weight:{acc_ada_gan_loss_weight**(1/n_batch):.4f}; ' + \
            f'perplexity: {perplexity:.4f}; ' + \
            f'disc_loss: {acc_d_loss / n_batch:.4f}; ' + \
            f'disc_accuracy: {acc_d_acc_r / n_batch:.4f}/{acc_d_acc_f / n_batch:.4f};\n'
