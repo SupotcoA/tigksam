@@ -22,6 +22,7 @@ class VQGAN(nn.Module):
                  num_res_block=1,
                  rec_loss_weight=1,
                  gan_loss_weight=1,
+                 max_d_weight=10,
                  lpips_loss_weight=1,
                  latent_size=(16,16),
                  use_disc=False,
@@ -51,6 +52,7 @@ class VQGAN(nn.Module):
                                                channels_mult=d_config['channels_mult'])
         self.rec_loss_weight = rec_loss_weight
         self.gan_loss_weight = gan_loss_weight
+        self.max_d_weight = max_d_weight
         self.latent_size = latent_size
         self.disc_loss_weight = 1
         self.use_disc = use_disc and phase == 1
@@ -95,7 +97,7 @@ class VQGAN(nn.Module):
         g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
 
         d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
-        d_weight = torch.clamp(d_weight, 0.0, 10)
+        d_weight = torch.clamp(d_weight, 0.0, self.max_d_weight)
         # d_weight = d_weight * self.discriminator_weight
         return d_weight
 
