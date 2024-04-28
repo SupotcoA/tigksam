@@ -67,8 +67,8 @@ class VQGAN(nn.Module):
         self.gan_loss_weight_update_fn = g_config['gan_loss_weight_update_fn']
 
     @torch.no_grad()
-    def update_gan_loss_weight(self, epoch):
-        self.gan_loss_weight = self.gan_loss_weight_update_fn(epoch)
+    def update_gan_loss_weight(self, epoch, disc_acc=0.5):
+        self.gan_loss_weight = self.gan_loss_weight_update_fn(epoch, disc_acc=disc_acc)
 
     @torch.no_grad()
     def update_disc_loss_weight(self, epoch, d_loss_val):
@@ -128,8 +128,8 @@ class VQGAN(nn.Module):
                 'disc_out_real': disc_out_real}
 
     @staticmethod
-    def calculate_bce(proba, target=1):
-        proba = F.sigmoid(proba)
+    def calculate_bce(logits, target=1):
+        proba = F.sigmoid(logits)
         if target == 1:
             return -torch.mean(torch.log(proba + 1e-4))
         elif target == 0:
