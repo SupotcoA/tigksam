@@ -25,6 +25,8 @@ def train_step(model,
                config):
     model.train()
     model.update_gan_loss_weight(epoch)
+    acc_g_loss = 0
+    acc_d_loss = 0
     n_batch = 0
     acc_rec_loss = 0
     acc_cb_loss = 0
@@ -47,11 +49,15 @@ def train_step(model,
         d_loss = model.calculate_d_loss(disc_out['disc_out_fake'],
                                         disc_out['disc_out_real'])
 
-        (d_loss['tot_loss']/config['batch_acc']).backward()
-        if n_batch % config['batch_acc']==0:
-            d_optim.step()
-            d_optim.zero_grad()
+        # acc_d_loss+=d_loss['tot_loss']
+        # if n_batch % config['batch_acc']:
+        #     d_optim.zero_grad()
+        #     (acc_d_loss/config['batch_acc']).backward()
+        #     d_optim.step()
 
+        d_optim.zero_grad()
+        d_loss['tot_loss'].backward()
+        d_optim.step()
 
         disc_out = model.discriminate(fake_x=rec_out['recx'], on_train=True)
         g_loss = model.calculate_g_loss(x=batch_data,
@@ -59,15 +65,15 @@ def train_step(model,
                                         codebook_loss=rec_out['codebook_loss'],
                                         disc_out_fake=disc_out['disc_out_fake'])
 
-        (g_loss['tot_loss']/config['batch_acc']).backward()
-        if n_batch % config['batch_acc']==0:
-            g_optim.step()
-            g_optim.zero_grad()
+        # acc_g_loss += g_loss['tot_loss']
+        # if n_batch % config['batch_acc']:
+        #     g_optim.zero_grad()
+        #     (acc_g_loss / config['batch_acc']).backward()
+        #     g_optim.step()
 
-        # d_loss_logger.update(d_loss['disc_loss'].detach().cpu().item())
-
-        # model.update_gan_loss_weight(epoch=epoch,d_loss_val=d_loss_logger.val)
-        # model.update_disc_loss_weight(epoch=epoch,d_loss_val=d_loss_logger.val)
+        g_optim.zero_grad()
+        g_loss['tot_loss'].backward()
+        g_optim.step()
 
         acc_rec_loss += g_loss['rec_loss'].detach()
         acc_cb_loss += g_loss['codebook_loss'].detach()
@@ -105,7 +111,7 @@ def train_step(model,
            f'lpips_loss: {acc_lpips_loss / n_batch:.4f}; ' + \
            f'gan_loss: {acc_gan_loss / n_batch:.4f}; ' + \
            f'gan_fool_accuray: {acc_gan_acc / n_batch:.4f}; ' + \
-           f'ada_gan_loss_weight:{acc_ada_gan_loss_weight/n_batch:.4f}' + \
+           f'ada_gan_loss_weight:{acc_ada_gan_loss_weight/n_batch:.4f}; ' + \
            f'perplexity: {perplexity:.4f}; ' + \
            f'disc_loss: {acc_d_loss / n_batch:.4f}; ' + \
            f'disc_accuracy: {acc_d_acc_r / n_batch:.4f}/{acc_d_acc_f / n_batch:.4f};\n'
@@ -113,8 +119,7 @@ def train_step(model,
         f.write(info)
 
     print(info)
-    d_optim.zero_grad()
-    g_optim.zero_grad()
+
 
 
 @torch.no_grad()
