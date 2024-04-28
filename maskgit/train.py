@@ -46,8 +46,8 @@ def train_step(model,
         rec_out = model.reconstruct(batch_data)
         disc_out = model.discriminate(fake_x=rec_out['recx'].detach(),
                                       real_x=batch_data, on_train=True)
-        d_loss = model.calculate_d_loss(disc_out['disc_out_fake'],
-                                        disc_out['disc_out_real'])
+        d_loss = model.calculate_d_loss(disc_out_fake=disc_out['disc_out_fake'],
+                                        disc_out_real=disc_out['disc_out_real'])
 
         # acc_d_loss+=d_loss['tot_loss']
         # if n_batch % config['batch_acc']:

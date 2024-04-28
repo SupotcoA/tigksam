@@ -128,7 +128,7 @@ class VQGAN(nn.Module):
                 'disc_out_real': disc_out_real}
 
     @staticmethod
-    def calculate_bce(self, proba, target=1):
+    def calculate_bce(proba, target=1):
         proba = F.sigmoid(proba)
         if target == 1:
             return -torch.mean(torch.log(proba + 1e-4))
@@ -142,14 +142,14 @@ class VQGAN(nn.Module):
         else:
             lpips_loss = 0
         if self.use_disc:
-            gan_loss = F.relu_(0.9-disc_out_fake).mean()  # self.calculate_bce(disc_out_fake, target=1)
+            #gan_loss = F.relu_(1-disc_out_fake).mean()
+            gan_loss = self.calculate_bce(disc_out_fake, target=1)
             gan_acc = F.sigmoid(disc_out_fake).mean()
             if rec_loss.requires_grad:
                 ada_gan_loss_weight = self.calculate_adaptive_weight(rec_loss+lpips_loss,
                                                                      gan_loss)
             else:
                 ada_gan_loss_weight = 0
-
         else:
             gan_loss = 0
             gan_acc = 0
@@ -165,15 +165,15 @@ class VQGAN(nn.Module):
                 'gan_loss': gan_loss,
                 'gan_accuracy': gan_acc,
                 'tot_loss': tot_loss,
-                'ada_gan_loss_weight':ada_gan_loss_weight
+                'ada_gan_loss_weight': ada_gan_loss_weight
                 }
 
     def calculate_d_loss(self, disc_out_fake, disc_out_real):
-        #disc_loss = self.calculate_bce(disc_out_fake, target=0) + \
-        #            self.calculate_bce(disc_out_real, target=1)
-        disc_loss = (torch.mean(F.relu_(1. - disc_out_real)) + \
-                     torch.mean(F.relu_(1. + disc_out_fake)))*0.5
-        tot_loss = disc_loss * self.disc_loss_weight
+        disc_loss = (self.calculate_bce(disc_out_fake, target=0) +
+                     self.calculate_bce(disc_out_real, target=1)) / 2
+        #disc_loss = (torch.mean(F.relu_(1. - disc_out_real)) +
+        #             torch.mean(F.relu_(1. + disc_out_fake)))*0.5
+        tot_loss = disc_loss
         disc_acc_r = torch.mean(F.sigmoid(disc_out_real))
         disc_acc_f = 1 - torch.mean(F.sigmoid(disc_out_fake))
         return {'disc_loss': disc_loss,

@@ -51,14 +51,14 @@ def save_phase1(model,
             batch_data = batch_data.cuda()
         encodings = model.encode(batch_data)
         acc_encodings.append(np.reshape(encodings.cpu().numpy().astype('uint16'),
-                                        [-1,n_pos]))
+                                        [-1, n_pos]))
 
     for _, batch_data in enumerate(test_dataloader):
         if cuda:
             batch_data = batch_data.cuda()
         encodings = model.encode(batch_data)
         acc_encodings.append(np.reshape(encodings.cpu().numpy().astype('uint16'),
-                                        [-1,n_pos]))
+                                        [-1, n_pos]))
     acc_encodings=np.vstack(acc_encodings)
     np.save(os.path.join(outcome_root, f"{ver}/{epoch}_enc.npy"),acc_encodings)
 
