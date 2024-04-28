@@ -24,7 +24,7 @@ def train_step(model,
                g_optim,
                config):
     model.train()
-    model.update_gan_loss_weight(epoch)
+
     acc_g_loss = 0
     acc_d_loss = 0
     n_batch = 0
@@ -88,6 +88,8 @@ def train_step(model,
 
     avg_probs = acc_encodings_sum / torch.sum(acc_encodings_sum)
     perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
+    model.update_gan_loss_weight(epoch=epoch,
+                                 disc_acc=((acc_d_acc_r+acc_d_acc_f)/(2*n_batch)).cpu().item())
     if epoch % 1 == 0:
         with torch.no_grad():
             vis_img(batch_data, rec_out['recx'], f"train {epoch}",
