@@ -24,9 +24,9 @@ def train_step(model,
                g_optim,
                config):
     model.train()
-    ema_log = EMALogger(decay=0.75, val_init=0.75)
-    disc_skip_thres = 0.85
-    assert disc_skip_thres > 0.75
+    ema_log = EMALogger(decay=0.75, val_init=0.70)
+    disc_skip_thres = 0.71
+    assert disc_skip_thres > 0.70
     acc_g_loss = 0
     acc_d_loss = 0
     n_batch = 0
@@ -98,7 +98,7 @@ def train_step(model,
             ema_log.update((d_loss['disc_accuracy_real'].detach() +
                             d_loss['disc_accuracy_fake'].detach())/2)
         else:
-            ema_log.update(0.5)
+            ema_log.update(ema_log.val-0.1)
         model.update_gan_loss_weight(epoch=epoch,
                                      disc_acc=ema_log.val)
 
