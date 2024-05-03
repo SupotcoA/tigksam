@@ -97,7 +97,7 @@ class VQGAN(nn.Module):
         g_grads = torch.autograd.grad(g_loss, last_layer, retain_graph=True)[0]
 
         d_weight = torch.norm(nll_grads) / (torch.norm(g_grads) + 1e-4)
-        d_weight = torch.clamp(d_weight, self.max_d_weight[0], self.max_d_weight[1])
+        d_weight = torch.clamp(d_weight, 0.1, self.max_d_weight)
         # d_weight = d_weight * self.discriminator_weight
         return d_weight
 
