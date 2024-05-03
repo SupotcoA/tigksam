@@ -24,7 +24,9 @@ def train_step(model,
                g_optim,
                config):
     model.train()
-    ema_log = EMALogger(decay=0.75)
+    ema_log = EMALogger(decay=0.75, val_init=0.75)
+    disc_skip_thres = 0.85
+    assert disc_skip_thres > 0.75
     acc_g_loss = 0
     acc_d_loss = 0
     n_batch = 0
@@ -44,20 +46,27 @@ def train_step(model,
             batch_data = batch_data.cuda()
 
         rec_out = model.reconstruct(batch_data)
-        disc_out = model.discriminate(fake_x=rec_out['recx'].detach(),
-                                      real_x=batch_data, on_train=True)
-        d_loss = model.calculate_d_loss(disc_out_fake=disc_out['disc_out_fake'],
-                                        disc_out_real=disc_out['disc_out_real'])
+        if ema_log.val < disc_skip_thres:
+            disc_out = model.discriminate(fake_x=rec_out['recx'].detach(),
+                                          real_x=batch_data, on_train=True)
+            d_loss = model.calculate_d_loss(disc_out_fake=disc_out['disc_out_fake'],
+                                            disc_out_real=disc_out['disc_out_real'])
 
-        # acc_d_loss+=d_loss['tot_loss']
-        # if n_batch % config['batch_acc']:
-        #     d_optim.zero_grad()
-        #     (acc_d_loss/config['batch_acc']).backward()
-        #     d_optim.step()
+            # acc_d_loss+=d_loss['tot_loss']
+            # if n_batch % config['batch_acc']:
+            #     d_optim.zero_grad()
+            #     (acc_d_loss/config['batch_acc']).backward()
+            #     d_optim.step()
 
-        d_optim.zero_grad()
-        d_loss['tot_loss'].backward()
-        d_optim.step()
+            d_optim.zero_grad()
+            d_loss['tot_loss'].backward()
+            d_optim.step()
+        else:
+            try:
+                d_loss['tot_loss'] = 0
+            except KeyError:
+                print(n_batch)
+                raise KeyError()
 
         disc_out = model.discriminate(fake_x=rec_out['recx'], on_train=True)
         g_loss = model.calculate_g_loss(x=batch_data,
@@ -85,9 +94,11 @@ def train_step(model,
         acc_d_loss += d_loss['disc_loss'].detach()
         acc_d_acc_r += d_loss['disc_accuracy_real'].detach()
         acc_d_acc_f += d_loss['disc_accuracy_fake'].detach()
-
-        ema_log.update((d_loss['disc_accuracy_real'].detach() +
-                        d_loss['disc_accuracy_fake'].detach())/2)
+        if ema_log.val<disc_skip_thres:
+            ema_log.update((d_loss['disc_accuracy_real'].detach() +
+                            d_loss['disc_accuracy_fake'].detach())/2)
+        else:
+            ema_log.update(0.5)
         model.update_gan_loss_weight(epoch=epoch,
                                      disc_acc=ema_log.val)
 
@@ -125,7 +136,6 @@ def train_step(model,
         f.write(info)
 
     print(info)
-
 
 
 @torch.no_grad()
