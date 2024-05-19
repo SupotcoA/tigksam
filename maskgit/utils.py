@@ -40,10 +40,10 @@ def save_phase1(model,
                 cuda,
                 **kwargs
                 ):
-    assert phase==1
+    assert phase == 1
     torch.save(model.state_dict(),
-               os.path.join(outcome_root,f"{ver}/vq{epoch}.pth"))
-    n_pos=latent_size[0]*latent_size[1]
+               os.path.join(outcome_root, f"{ver}/vq{epoch}.pth"))
+    n_pos = latent_size[0] * latent_size[1]
     model.eval()
     acc_encodings = []
     for _, batch_data in enumerate(train_dataloader):
@@ -59,8 +59,9 @@ def save_phase1(model,
         encodings = model.encode(batch_data)
         acc_encodings.append(np.reshape(encodings.cpu().numpy().astype('uint16'),
                                         [-1, n_pos]))
-    acc_encodings=np.vstack(acc_encodings)
-    np.save(os.path.join(outcome_root, f"{ver}/{epoch}_enc.npy"),acc_encodings)
+    acc_encodings = np.vstack(acc_encodings)
+    np.save(os.path.join(outcome_root, f"{ver}/{epoch}_enc.npy"), acc_encodings)
+
 
 @torch.no_grad()
 def save_phase2(maskgit,
@@ -69,10 +70,11 @@ def save_phase2(maskgit,
                 epoch,
                 outcome_root,
                 **kwargs):
-    assert phase==2
+    assert phase == 2
     maskgit.eval()
     torch.save(maskgit.state_dict(),
-               os.path.join(outcome_root,f"{ver}/maskgit{epoch}.pth"))
+               os.path.join(outcome_root, f"{ver}/maskgit{epoch}.pth"))
+
 
 @torch.no_grad()
 def vis_img(x, y, name,
@@ -96,7 +98,7 @@ def vis_img(x, y, name,
     cv2.imwrite(fp, arr)
 
 
-def show_probs_rank(avg_probs,outcome_root,ver):
+def show_probs_rank(avg_probs, outcome_root, ver):
     avg_probs = np.sort(avg_probs)
     plt.bar(np.arange(avg_probs.shape[0]), avg_probs)
     plt.savefig(os.path.join(outcome_root, f"{ver}/Dis.png"), dpi=80)
@@ -106,38 +108,39 @@ def show_probs_rank(avg_probs,outcome_root,ver):
 def vis_pca(model,
             maskgit=None,
             config=None):
-    if config['phase']==1:
+    if config['phase'] == 1:
         X = model.code_book.embed.weight.detach().cpu().numpy()
         pca = PCA(n_components=2)
         X = pca.fit_transform(X)
         plt.scatter(X[:, 0], X[:, 1])
-        plt.savefig(os.path.join(config['outcome_root'], f"{config['ver']}/PCA.png"),dpi=80)
+        plt.savefig(os.path.join(config['outcome_root'], f"{config['ver']}/PCA.png"), dpi=80)
         plt.clf()
-    elif config['phase']==2 or config['phase']==3:
+    elif config['phase'] == 2 or config['phase'] == 3:
         def f(k):
-            if 0<=k<=3: # 0 3
+            if 0 <= k <= 3:  # 0 3
                 return k
-            elif 4<=k<=7: # 5 11
-                return 2*k-3
-            elif 8<=k<=11:  # 14 23
-                return 3*k-10
+            elif 4 <= k <= 7:  # 5 11
+                return 2 * k - 3
+            elif 8 <= k <= 11:  # 14 23
+                return 3 * k - 10
             else:
                 return 0
+
         X = maskgit.pos_embed.detach().cpu().numpy()
         pca = PCA(n_components=24)
         X = pca.fit_transform(X)
         fig, axs = plt.subplots(3, 4)
-        for i,ax in enumerate(axs.flat):
-            k=f(i)
-            ax.imshow(np.reshape(X[:,k],config['latent_size']))
+        for i, ax in enumerate(axs.flat):
+            k = f(i)
+            ax.imshow(np.reshape(X[:, k], config['latent_size']))
             ax.set_xticks([])
             ax.set_yticks([])
-            ax.set_xlabel(str(k+1))
+            ax.set_xlabel(str(k + 1))
         plt.tight_layout(pad=0.5, h_pad=0.5, w_pad=0.5)
-        plt.savefig(os.path.join(config['outcome_root'], f"{config['ver']}/PosEmbed.png"),dpi=80)
+        plt.savefig(os.path.join(config['outcome_root'], f"{config['ver']}/PosEmbed.png"), dpi=80)
         plt.clf()
 
 
 def make_archive(zipfile_path, dir_path, config):
-    shutil.make_archive(os.path.join(zipfile_path,config['ver']),
-                        "zip", os.path.join(dir_path,config['ver']))
+    shutil.make_archive(os.path.join(zipfile_path, config['ver']),
+                        "zip", os.path.join(dir_path, config['ver']))
